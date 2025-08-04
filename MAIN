@@ -1,0 +1,743 @@
+# README.md
+"""
+# Institutional-Grade Long/Short Equity Trading System
+
+This project provides the foundational architecture for a comprehensive, modular,
+and high-performance Python platform for systematic long/short equity portfolio
+management. It is designed to meet the rigorous standards of institutional
+quantitative hedge funds.
+
+The system covers the full lifecycle of a quantitative trading strategy:
+- Data Infrastructure and Universe Construction
+- Alpha Research and Signal Generation
+- Trade Opportunity Selection
+- Portfolio Construction and Optimization
+- Advanced Risk Management
+- High-Fidelity Execution Simulation
+- Backtesting, Attribution, and Reporting
+- Regulatory-Grade Compliance and Auditing
+
+## Project Structure
+
+The project is organized into distinct modules, each responsible for a core
+component of the trading lifecycle.
+
+- `configs/`: YAML/JSON configuration files for all system parameters.
+- `data/`: Data ingestion, cleaning, quality control, and universe definition.
+- `research/`: Factor libraries, ML models, and signal blending.
+- `portfolio/`: Optimization, position sizing, and risk management.
+- `execution/`: Order routing, slippage modeling, and cost simulation.
+- `backtesting/`: Simulation engine, performance analytics, and reporting.
+- `core/`: Shared components like compliance, event management, and trade lifecycle.
+- `notebooks/`: Jupyter notebooks for research, analysis, and visualization.
+- `tests/`: Unit, integration, and regression tests.
+- `main.py`: Main entry point for running simulations and production jobs.
+
+## Getting Started
+
+1.  **Dependencies**: Install the required Python packages:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **Configuration**: Modify `configs/main_config.yaml` to set up database
+    connections, API keys, and simulation parameters.
+
+3.  **Running a Backtest**: Use the main entry point to run a backtest.
+    ```bash
+    python main.py --config configs/main_config.yaml --mode backtest
+    ```
+
+## Engineering Principles
+
+- **Modularity**: Each component is self-contained and can be developed, tested,
+  and replaced independently.
+- **Configuration-Driven**: All parameters are externalized to YAML files,
+  allowing for easy tuning without code changes.
+- **Testability**: A comprehensive test suite ensures reliability and correctness.
+- **Reproducibility**: Full versioning of data, code, and configurations ensures
+  that all results can be reproduced.
+- **Scalability**: Designed for parallel processing and deployment on cloud or
+  on-premise infrastructure.
+
+"""
+
+# requirements.txt
+"""
+# Core Libraries
+pandas
+numpy
+scipy
+pyarrow
+tables  # For HDF5/PyTables
+
+# Machine Learning
+scikit-learn
+lightgbm
+catboost
+tensorflow
+statsmodels # For neutralization
+
+# Optimization
+cvxpy
+
+# Database & Data
+sqlalchemy
+
+# API & Web
+requests
+
+# Utilities
+pyyaml
+tqdm
+joblib # For parallelization
+
+# Plotting & Reporting
+matplotlib
+seaborn
+plotly
+weasyprint  # For PDF report generation
+jinja2 # For HTML templates
+
+# Linting & Testing
+pytest
+pytest-cov
+flake8
+mypy
+black
+"""
+
+# Dockerfile
+"""
+# Dockerfile for Long/Short Equity Trading System
+
+# Use a standard Python base image
+FROM python:3.10-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code
+COPY . .
+
+# Define the entry point for the application
+# Example: running a backtest by default
+ENTRYPOINT ["python", "main.py"]
+CMD ["--config", "configs/main_config.yaml", "--mode", "backtest"]
+"""
+
+# main.py
+"""
+Main entry point for the Long/Short Equity Trading System.
+
+This script orchestrates the different components of the system, from data
+loading to backtesting and reporting, based on a master configuration file.
+"""
+import argparse
+import yaml
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+logger = logging.getLogger(__name__)
+
+def run_backtest(config):
+    """Orchestrates a full backtest run."""
+    logger.info("Starting backtest run...")
+    # 1. Initialize components based on config
+    #    - Universe Constructor
+    #    - Data Ingestor
+    #    - Signal Engine
+    #    - Portfolio Optimizer
+    #    - Execution Simulator
+    #    - Backtest Engine
+    logger.info("Components initialized.")
+
+    # 2. Run the backtest engine
+    #    engine = BacktestEngine(config)
+    #    results = engine.run()
+    logger.info("Backtest simulation complete.")
+
+    # 3. Generate analytics and reports
+    #    reporter = Reporting(results)
+    #    reporter.generate_tear_sheet()
+    logger.info("Tear sheet and analytics report generated.")
+    logger.info("Backtest run finished successfully.")
+
+def run_live_trading(config):
+    """Orchestrates a live trading session (placeholder)."""
+    logger.info("Starting live trading run (SIMULATED)...")
+    # This would connect to a live broker API and run the trading loop.
+    # For now, it's a placeholder.
+    while True:
+        # 1. Check for new market data
+        # 2. Update signals
+        # 3. Rebalance portfolio if needed
+        # 4. Send orders to broker
+        # 5. Monitor positions and risk
+        logger.info(f"Live trading loop running at {datetime.now()}...")
+        # In a real scenario, this would have a proper exit condition.
+        break
+    logger.info("Live trading run finished.")
+
+
+def main():
+    """Main function to parse arguments and launch the system."""
+    parser = argparse.ArgumentParser(description="Long/Short Equity Trading System")
+    parser.add_argument(
+        '--config',
+        type=str,
+        required=True,
+        help="Path to the main YAML configuration file."
+    )
+    parser.add_argument(
+        '--mode',
+        type=str,
+        choices=['backtest', 'live'],
+        required=True,
+        help="Operating mode: 'backtest' or 'live'."
+    )
+    args = parser.parse_args()
+
+    logger.info(f"Loading configuration from: {args.config}")
+    with open(args.config, 'r') as f:
+        config = yaml.safe_load(f)
+
+    logger.info(f"System starting in {args.mode.upper()} mode.")
+
+    if args.mode == 'backtest':
+        run_backtest(config)
+    elif args.mode == 'live':
+        run_live_trading(config)
+    else:
+        logger.error(f"Unknown mode: {args.mode}")
+
+
+if __name__ == "__main__":
+    main()
+
+# configs/main_config.yaml
+"""
+# ==============================================================================
+# Main Configuration for the Long/Short Equity Trading System
+# ==============================================================================
+
+# --- System Wide Settings ---
+run_name: "SP500_Value_Momentum_Q3_2025_v2"
+start_date: "2015-01-01"
+end_date: "2024-12-31"
+data_snapshot_version: "v2.1.0" # For reproducible research
+parallelization:
+  enabled: True
+  n_jobs: -1 # Use all available CPU cores
+
+# --- Data Infrastructure ---
+data:
+  provider: "Simulated" # Or 'FactSet', 'Bloomberg', 'InternalDB'
+  data_path: "./data/simulated_data_store" # Use a local path for simulation
+  cache_path: "./cache"
+  security_master_path: "data/security_master.csv"
+  universe:
+    name: "SP500" # Or 'Russell3000', 'STOXX600'
+    reconstitution_frequency: "daily"
+    eligibility_rules:
+      min_price: 5.0
+      min_adv_usd: 10_000_000
+      remove_halted: True
+      # Advanced rule: days-to-liquidate constraint
+      max_days_to_liquidate: 10.0 # Position size cannot exceed 1/10th of ADV
+  quality:
+    # Rules for cleaning data from DataIngestor
+    ffill_limit: 5 # Forward fill missing data for max 5 days
+    outlier_detection:
+      method: "iqr" # Interquartile Range
+      threshold: 1.5
+
+# --- Alpha Research & Signal Engine ---
+alpha:
+  factors:
+    - name: "Value"
+      weight: 0.4
+      sources:
+        - { type: "PE_RATIO", z_score: True, winsorize: 0.05 }
+        - { type: "FCF_YIELD", z_score: True, winsorize: 0.05 }
+    - name: "Momentum"
+      weight: 0.4
+      sources:
+        - { type: "RELATIVE_STRENGTH_12_1", z_score: True, neutralize: { against: ["sector", "beta"], enabled: True } }
+    - name: "Quality"
+      weight: 0.2
+      sources:
+        - { type: "F_SCORE", z_score: True }
+  blending_method: "weighted_average" # Or 'ml_ranker_lightgbm'
+  ml_model_path: "research/models/lgbm_ranker_v1.txt"
+
+# --- Portfolio Construction & Optimization ---
+portfolio:
+  optimizer: "MeanVariance" # Or 'MinVolatility', 'MaxAlpha'
+  rebalance_frequency: "monthly" # Or 'weekly', 'daily', 'end_of_month'
+  position_sizing_method: "InverseVolatility" # Or 'EqualWeight', 'RiskParity'
+  optimizer_params:
+    risk_aversion: 0.5 # Gamma parameter for MeanVariance optimizer
+  constraints:
+    leverage:
+      gross: 1.50 # 150%
+      net: 0.0   # Market neutral
+    position_limits:
+      max_long: 0.05  # 5%
+      max_short: 0.05 # 5%
+    factor_exposure:
+      beta: { min: -0.1, max: 0.1, enabled: True }
+    sector_deviation_from_benchmark:
+      max: 0.02 # Max 2% deviation from benchmark sector weights
+      enabled: True
+    turnover:
+      max: 0.25 # Max 25% turnover per rebalance
+      enabled: True
+
+# --- Risk Management ---
+risk:
+  # Pre-trade and post-trade risk controls
+  stop_loss:
+    type: "trailing" # 'fixed', 'trailing'
+    value: 0.15 # 15% trailing stop from peak
+    enabled: True
+  max_drawdown:
+    portfolio_level:
+      value: 0.20 # 20% portfolio-level kill switch
+      enabled: True
+    position_level:
+      value: 0.10  # 10% max loss per position before review/exit
+      enabled: True
+
+# --- Execution Simulation ---
+execution:
+  broker_model: "InteractiveBrokers" # For commission and fee structure
+  slippage_model: "Adaptive" # 'FixedBPS', 'Adaptive'
+  slippage_params:
+    base_bps: 2.5 # 2.5 bps slippage
+    adv_impact_factor: 0.1 # Additional slippage based on % of ADV
+  commission_params:
+    # Example for IBKR tiered pricing
+    per_share: 0.0035
+    min_per_order: 0.35
+    max_per_order_pct: 0.005 # 0.5% of trade value
+
+# --- Reporting ---
+reporting:
+  output_path: "./reports"
+  tear_sheet_format: "html" # 'pdf', 'html'
+  metrics:
+    - "Sharpe"
+    - "Sortino"
+    - "Calmar"
+    - "MaxDrawdown"
+    - "Turnover"
+    - "Beta"
+    - "Alpha"
+"""
+
+# data/universe_constructor.py
+"""
+1. Data Infrastructure and Universe Construction
+1.1. Universe Engineering
+
+Handles the construction of the tradable universe based on rules-based logic.
+"""
+import pandas as pd
+
+class UniverseConstructor:
+    """
+    Constructs and maintains the investment universe.
+
+    - Selects equities based on index constituents (e.g., S&P 500).
+    - Applies point-in-time filtering for dynamic reconstitution.
+    - Manages historical constituent lists and audit trails.
+    - Applies liquidity and other eligibility filters.
+    """
+    def __init__(self, config):
+        self.config = config['data']['universe']
+        self.history = {} # Stores historical constituents
+
+    def get_universe(self, date: pd.Timestamp) -> pd.DataFrame:
+        """
+        Returns the eligible universe for a given date.
+
+        Args:
+            date: The point-in-time date for which to construct the universe.
+
+        Returns:
+            A DataFrame containing the list of eligible tickers with metadata.
+        """
+        # 1. Load base constituents for the given date (e.g., from a file or DB)
+        # This is a placeholder for actual data loading logic.
+        base_constituents = self._load_base_constituents(date)
+
+        # 2. Apply eligibility rules from the config
+        eligible_universe = self._apply_eligibility_rules(base_constituents, date)
+
+        # 3. Tag with comprehensive metadata
+        # In a real system, this would join with a security master database.
+        tagged_universe = self._tag_metadata(eligible_universe)
+
+        # 4. Store a snapshot for auditing
+        self.history[date] = tagged_universe
+
+        return tagged_universe
+
+    def _load_base_constituents(self, date: pd.Timestamp) -> pd.DataFrame:
+        """Placeholder for loading index constituents as of a specific date."""
+        # In a real system, this would query a database like:
+        # SELECT ticker, isin, cusip FROM index_constituents WHERE index_name = 'SP500' AND date = ?
+        print(f"Loading base universe for {self.config['name']} as of {date.date()}")
+        # Simulate a dummy universe
+        return pd.DataFrame({
+            'ticker': [f'TICK{i}' for i in range(500)],
+            'name': [f'Company {i}' for i in range(500)]
+        })
+
+    def _apply_eligibility_rules(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame:
+        """Applies liquidity and other screening rules."""
+        rules = self.config['eligibility_rules']
+        print(f"Applying eligibility rules for {date.date()}: {rules}")
+        # Placeholder for applying rules like min price, min ADV, etc.
+        # This would involve fetching daily market data for each ticker.
+        # e.g., df = df[df['price'] > rules['min_price']]
+        # e.g., df = df[df['adv_20d_usd'] > rules['min_adv_usd']]
+        return df.head(450) # Simulate some tickers being filtered out
+
+    def _tag_metadata(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Placeholder for joining with a security master DB."""
+        print("Tagging universe with metadata (GICS, region, etc.).")
+        df['gics_sector'] = "Simulated Sector"
+        df['region'] = "USA"
+        df['currency'] = "USD"
+        return df
+
+# data/data_ingestor.py
+"""
+1.2. Data Integration and Quality
+
+Handles ingestion of various data types (market, fundamental, alternative).
+"""
+
+class DataIngestor:
+    """
+    Ingests, cleanses, and provides access to all required data.
+
+    - OHLCV, fundamentals, consensus estimates, alternative data.
+    - Handles corporate actions (splits, dividends).
+    - Manages point-in-time data access to prevent lookahead bias.
+    """
+    def __init__(self, config):
+        self.config = config['data']
+        self.data_path = self.config['data_path']
+        # In a real system, this would initialize connections to databases or APIs.
+
+    def get_market_data(self, tickers: list, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        Retrieves OHLCV market data for a list of tickers.
+        This data must be adjusted for splits and dividends.
+        """
+        print(f"Fetching market data for {len(tickers)} tickers from {start_date} to {end_date}.")
+        # Placeholder for loading from Parquet/HDF5 files or a database.
+        return pd.DataFrame()
+
+    def get_fundamental_data(self, tickers: list, date: pd.Timestamp) -> pd.DataFrame:
+        """
+        Retrieves point-in-time fundamental data.
+        Simulates reporting lags to ensure historical accuracy.
+        """
+        print(f"Fetching point-in-time fundamental data for {len(tickers)} as of {date.date()}.")
+        # Placeholder for loading from a point-in-time fundamentals database.
+        return pd.DataFrame()
+
+# research/factor_library.py
+"""
+2. Alpha Research & Signal Engine
+2.1. Factor Library and Research Framework
+
+Contains implementations of various alpha factors.
+"""
+
+class FactorLibrary:
+    """
+    A library of orthogonal alpha factors.
+
+    Each method computes a specific factor for a given universe and date,
+    using point-in-time data to avoid lookahead bias.
+    """
+    def __init__(self, data_ingestor: DataIngestor):
+        self.data_ingestor = data_ingestor
+
+    def compute_pe_ratio(self, universe: pd.DataFrame, date: pd.Timestamp) -> pd.Series:
+        """Computes the Price-to-Earnings (P/E) ratio."""
+        # 1. Get latest price data
+        # 2. Get latest point-in-time EPS data
+        # 3. Return price / EPS
+        print(f"Computing P/E ratio for {len(universe)} tickers on {date.date()}.")
+        return pd.Series(index=universe['ticker'], dtype=float)
+
+    def compute_relative_strength(self, universe: pd.DataFrame, date: pd.Timestamp) -> pd.Series:
+        """Computes 12-month momentum, skipping the most recent month."""
+        print(f"Computing relative strength for {len(universe)} tickers on {date.date()}.")
+        return pd.Series(index=universe['ticker'], dtype=float)
+
+    def compute_roe(self, universe: pd.DataFrame, date: pd.Timestamp) -> pd.Series:
+        """Computes Return on Equity (ROE)."""
+        print(f"Computing ROE for {len(universe)} tickers on {date.date()}.")
+        return pd.Series(index=universe['ticker'], dtype=float)
+
+# research/signal_engine.py
+"""
+2.3. Signal Storage and Lifecycle
+
+Combines individual factors into a final alpha signal.
+"""
+import pandas as pd
+
+class SignalEngine:
+    """
+    Generates the final alpha signal by blending multiple factors.
+
+    - Applies cross-sectional transformations (z-scoring, ranking).
+    - Neutralizes signals against risk factors (e.g., sector, beta).
+    - Blends factors based on weights or a machine learning model.
+    """
+    def __init__(self, config, factor_library: FactorLibrary):
+        self.config = config['alpha']
+        self.factor_library = factor_library
+
+    def generate_final_signal(self, universe: pd.DataFrame, date: pd.Timestamp) -> pd.Series:
+        """
+        Computes the blended alpha signal for the universe on a given date.
+        """
+        print(f"Generating final alpha signal for {date.date()}.")
+        all_factor_scores = pd.DataFrame(index=universe['ticker'])
+
+        # 1. Compute all configured factors
+        for factor_conf in self.config['factors']:
+            # This is a simplified lookup. A real system would use a factory pattern.
+            if "Value" in factor_conf['name']:
+                # In reality, you'd compute each source (P/E, FCF_Yield)
+                score = self.factor_library.compute_pe_ratio(universe, date)
+            elif "Momentum" in factor_conf['name']:
+                score = self.factor_library.compute_relative_strength(universe, date)
+            else:
+                score = pd.Series(index=universe['ticker'])
+
+            # 2. Process and store the score
+            processed_score = self._process_factor_score(score, factor_conf)
+            all_factor_scores[factor_conf['name']] = processed_score
+
+        # 3. Blend the factor scores into a final signal
+        final_signal = self._blend_factors(all_factor_scores)
+
+        print("Final signal generated.")
+        return final_signal
+
+    def _process_factor_score(self, score: pd.Series, config: dict) -> pd.Series:
+        """Applies z-scoring, winsorization, and neutralization."""
+        # Placeholder for processing logic
+        if config.get('z_score'):
+            score = (score - score.mean()) / score.std()
+        if config.get('neutralize'):
+            # Placeholder for regression-based neutralization
+            pass
+        return score
+
+    def _blend_factors(self, scores: pd.DataFrame) -> pd.Series:
+        """Blends multiple factor scores into one."""
+        if self.config['blending_method'] == 'weighted_average':
+            weights = {f['name']: f['weight'] for f in self.config['factors']}
+            return (scores * pd.Series(weights)).sum(axis=1)
+        else:
+            # Placeholder for ML-based blending
+            return scores.mean(axis=1)
+
+# portfolio/optimizer.py
+"""
+4. Portfolio Construction, Optimization, and Risk Controls
+4.1. Portfolio Optimization
+"""
+import cvxpy as cp
+import numpy as np
+
+class PortfolioOptimizer:
+    """
+    Optimizes the portfolio to determine target weights.
+
+    - Implements various solvers (Mean-Variance, Min-Volatility).
+    - Enforces constraints on leverage, position size, factor exposure, etc.
+    """
+    def __init__(self, config):
+        self.config = config['portfolio']
+
+    def optimize(self, alpha_signals: pd.Series, current_holdings: dict) -> dict:
+        """
+        Runs the portfolio optimization process.
+
+        Args:
+            alpha_signals: A Series of alpha scores, indexed by ticker.
+            current_holdings: A dict of current positions.
+
+        Returns:
+            A dict of target portfolio weights, indexed by ticker.
+        """
+        print(f"Running {self.config['optimizer']} optimization...")
+
+        # Placeholder for a real covariance matrix
+        num_assets = len(alpha_signals)
+        cov_matrix = np.eye(num_assets) * 0.05
+
+        # Define optimization variables
+        target_weights = cp.Variable(num_assets)
+        alpha_vector = alpha_signals.values
+
+        # Define objective function (e.g., maximize alpha - risk_aversion * risk)
+        objective = cp.Maximize(target_weights.T @ alpha_vector - 0.5 * cp.quad_form(target_weights, cov_matrix))
+
+        # Define constraints from config
+        constraints = self._build_constraints(target_weights, num_assets)
+
+        # Solve the problem
+        problem = cp.Problem(objective, constraints)
+        problem.solve()
+
+        if problem.status not in ["optimal", "optimal_inaccurate"]:
+            print("Warning: Optimization failed or was inaccurate.")
+            return {}
+
+        target_portfolio = dict(zip(alpha_signals.index, target_weights.value))
+        print("Optimization complete.")
+        return target_portfolio
+
+    def _build_constraints(self, weights_var, num_assets):
+        """Builds CVXPY constraints from the YAML config."""
+        constraints_conf = self.config['constraints']
+        constraints = [
+            # Gross and Net Leverage
+            cp.sum(weights_var) == constraints_conf['leverage']['net'],
+            cp.norm(weights_var, 1) <= constraints_conf['leverage']['gross'],
+
+            # Position Limits
+            weights_var <= constraints_conf['position_limits']['max_long'],
+            weights_var >= -constraints_conf['position_limits']['max_short'],
+        ]
+        # Add other constraints like factor/sector neutrality here
+        return constraints
+
+# backtesting/engine.py
+"""
+6. Backtesting, Analytics, and Reporting
+6.1. Backtest Engine
+"""
+
+class BacktestEngine:
+    """
+    High-fidelity backtesting engine.
+
+    - Iterates through time, handling data and events in a point-in-time manner.
+    - Orchestrates all other components (universe, signals, portfolio, execution).
+    - Prevents lookahead bias and logs all actions for audit.
+    """
+    def __init__(self, config, universe_constructor, signal_engine, optimizer, execution_simulator):
+        self.config = config
+        self.start_date = pd.to_datetime(config['start_date'])
+        self.end_date = pd.to_datetime(config['end_date'])
+        self.rebalance_freq = config['portfolio']['rebalance_frequency']
+
+        # Components
+        self.universe_constructor = universe_constructor
+        self.signal_engine = signal_engine
+        self.optimizer = optimizer
+        self.execution_simulator = execution_simulator
+
+    def run(self):
+        """Executes the main backtest loop."""
+        print("Backtest engine starting main event loop.")
+        # Generate rebalance dates
+        rebalance_dates = pd.date_range(self.start_date, self.end_date, freq=self.rebalance_freq)
+
+        portfolio_history = []
+        current_holdings = {}
+
+        for date in rebalance_dates:
+            print(f"--- Processing rebalance date: {date.date()} ---")
+            # 1. Define the universe for this date
+            universe = self.universe_constructor.get_universe(date)
+            if universe.empty:
+                continue
+
+            # 2. Generate alpha signals for the universe
+            alpha_signals = self.signal_engine.generate_final_signal(universe, date)
+
+            # 3. Optimize the portfolio to get target weights
+            target_weights = self.optimizer.optimize(alpha_signals, current_holdings)
+
+            # 4. Generate trades to move from current to target portfolio
+            trades = self._calculate_trades(current_holdings, target_weights)
+
+            # 5. Simulate execution of trades
+            # In a real system, this would update holdings based on fills
+            # current_holdings = self.execution_simulator.execute(trades)
+            current_holdings = target_weights # Assume perfect execution for now
+
+            # 6. Log portfolio state
+            portfolio_history.append({'date': date, 'holdings': current_holdings})
+
+        print("Backtest event loop finished.")
+        return portfolio_history
+
+    def _calculate_trades(self, current_weights, target_weights):
+        """Calculates the trades needed to rebalance the portfolio."""
+        # Simple implementation for now
+        return {ticker: target_weights.get(ticker, 0) - current_weights.get(ticker, 0)
+                for ticker in set(current_weights) | set(target_weights)}
+
+# execution/slippage_model.py
+"""
+5. Execution Modeling
+5.1. Order Routing and Slippage Simulation
+"""
+
+class SlippageModel:
+    """
+    Simulates the transaction costs (slippage) of executing trades.
+    """
+    def __init__(self, config):
+        self.config = config['execution']
+
+    def calculate_slippage(self, trade_order):
+        """
+        Calculates the estimated slippage for a given order.
+
+        Args:
+            trade_order: A dictionary representing the trade
+                         (e.g., {'ticker': 'AAPL', 'size': 1000, 'adv': 0.01}).
+
+        Returns:
+            The estimated cost of slippage in dollars.
+        """
+        model = self.config['slippage_model']
+        params = self.config['slippage_params']
+
+        if model == 'FixedBPS':
+            return abs(trade_order['size']) * trade_order['price'] * (params['base_bps'] / 10000)
+        elif model == 'Adaptive':
+            # A more complex model considering the order size relative to ADV
+            percent_of_adv = abs(trade_order['size']) / trade_order['daily_volume']
+            impact_bps = params['base_bps'] + params['adv_impact_factor'] * np.sqrt(percent_of_adv)
+            return abs(trade_order['size']) * trade_order['price'] * (impact_bps / 10000)
+        else:
+            return 0.0
