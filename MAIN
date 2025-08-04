@@ -428,39 +428,147 @@ class UniverseConstructor:
 """
 1.2. Data Integration and Quality
 
-Handles ingestion of various data types (market, fundamental, alternative).
+Handles ingestion, cleaning, caching, and providing access to all required data
+in a point-in-time correct manner.
 """
+import os
+import pandas as pd
+import numpy as np
+import logging
+from joblib import Memory
+
+logger = logging.getLogger(__name__)
 
 class DataIngestor:
     """
     Ingests, cleanses, and provides access to all required data.
 
-    - OHLCV, fundamentals, consensus estimates, alternative data.
+    - Caches processed data for performance.
+    - Loads market data (OHLCV) and fundamental data.
+    - Applies data quality checks (forward-fill, outlier detection).
     - Handles corporate actions (splits, dividends).
     - Manages point-in-time data access to prevent lookahead bias.
     """
     def __init__(self, config):
         self.config = config['data']
         self.data_path = self.config['data_path']
-        # In a real system, this would initialize connections to databases or APIs.
+        self.security_master = self._load_security_master()
 
-    def get_market_data(self, tickers: list, start_date: str, end_date: str) -> pd.DataFrame:
-        """
-        Retrieves OHLCV market data for a list of tickers.
-        This data must be adjusted for splits and dividends.
-        """
-        print(f"Fetching market data for {len(tickers)} tickers from {start_date} to {end_date}.")
-        # Placeholder for loading from Parquet/HDF5 files or a database.
-        return pd.DataFrame()
+        # Initialize caching
+        cache_dir = self.config.get('cache_path', './cache')
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        self.memory = Memory(cache_dir, verbose=0)
+        
+        # Bind methods to the cache
+        self.get_market_data = self.memory.cache(self._get_market_data_from_source)
+        self.get_fundamental_data = self.memory.cache(self._get_fundamental_data_from_source)
 
-    def get_fundamental_data(self, tickers: list, date: pd.Timestamp) -> pd.DataFrame:
+    def _load_security_master(self) -> pd.DataFrame:
+        """Loads the security master file containing static metadata."""
+        path = self.config.get('security_master_path')
+        if not path or not os.path.exists(path):
+            logger.warning("Security master file not found. Metadata will be limited.")
+            return pd.DataFrame(columns=['ticker', 'gics_sector', 'region', 'currency'])
+        logger.info(f"Loading security master from {path}")
+        return pd.read_csv(path, index_col='ticker')
+
+    def _get_market_data_from_source(self, tickers: list, start_date: str, end_date: str) -> pd.DataFrame:
         """
-        Retrieves point-in-time fundamental data.
-        Simulates reporting lags to ensure historical accuracy.
+        Internal method to retrieve and process market data for a list of tickers.
+        This method is cached.
         """
-        print(f"Fetching point-in-time fundamental data for {len(tickers)} as of {date.date()}.")
-        # Placeholder for loading from a point-in-time fundamentals database.
-        return pd.DataFrame()
+        logger.info(f"CACHE MISS: Fetching market data for {len(tickers)} tickers from {start_date} to {end_date}.")
+        
+        # In a real system, this would read from a database or a set of Parquet files.
+        # We simulate this by creating a large multi-index DataFrame.
+        dates = pd.date_range(start_date, end_date, freq='B')
+        all_data = []
+        for ticker in tickers:
+            # Simulate some data with NaNs for cleaning
+            price_data = 100 + np.random.randn(len(dates)).cumsum()
+            price_data[np.random.choice(len(dates), size=int(len(dates)*0.05), replace=False)] = np.nan
+            df = pd.DataFrame({
+                'open': price_data - np.random.rand(len(dates)) * 0.5,
+                'high': price_data + np.random.rand(len(dates)),
+                'low': price_data - np.random.rand(len(dates)),
+                'close': price_data,
+                'volume': np.random.randint(1e6, 1e8, size=len(dates))
+            }, index=dates)
+            df['ticker'] = ticker
+            all_data.append(df)
+            
+        market_data = pd.concat(all_data).reset_index().rename(columns={'index': 'date'}).set_index(['date', 'ticker'])
+        
+        # 1. Apply Corporate Actions (critical to do this first)
+        market_data = self._adjust_for_splits(market_data)
+        market_data = self._adjust_for_dividends(market_data)
+        
+        # 2. Apply Data Quality Rules
+        market_data = self._clean_data(market_data)
+        
+        logger.info("Market data fetching and cleaning complete.")
+        return market_data
+
+    def _get_fundamental_data_from_source(self, tickers: list, date: pd.Timestamp) -> pd.DataFrame:
+        """
+        Internal method to retrieve point-in-time fundamental data.
+        This method is cached.
+        """
+        logger.info(f"CACHE MISS: Fetching point-in-time fundamental data for {len(tickers)} as of {date.date()}.")
+        # In a real system, this would query a database that stores historical,
+        # point-in-time records of fundamental data, accounting for reporting lags.
+        # e.g., SELECT * FROM fundamentals WHERE ticker IN (...) AND report_date <= ? AND announcement_date <= ?
+        
+        # Simulate some data
+        funda_data = pd.DataFrame({
+            'ticker': tickers,
+            'eps': np.random.uniform(1, 10, size=len(tickers)),
+            'roe': np.random.uniform(0.05, 0.25, size=len(tickers)),
+            'fcf_yield': np.random.uniform(0.01, 0.08, size=len(tickers))
+        }).set_index('ticker')
+        
+        logger.info("Fundamental data fetching complete.")
+        return funda_data
+        
+    def _clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Applies data quality rules from the configuration."""
+        quality_conf = self.config['quality']
+        logger.info(f"Applying data quality rules: {quality_conf}")
+        
+        # Forward-fill missing values
+        ffill_limit = quality_conf.get('ffill_limit', 0)
+        if ffill_limit > 0:
+            df = df.groupby('ticker').ffill(limit=ffill_limit)
+
+        # Outlier detection
+        outlier_conf = quality_conf.get('outlier_detection')
+        if outlier_conf and outlier_conf['method'] == 'iqr':
+            threshold = outlier_conf.get('threshold', 1.5)
+            for col in ['open', 'high', 'low', 'close']:
+                q1 = df[col].quantile(0.25)
+                q3 = df[col].quantile(0.75)
+                iqr = q3 - q1
+                lower_bound = q1 - (threshold * iqr)
+                upper_bound = q3 + (threshold * iqr)
+                df[col] = df[col].clip(lower=lower_bound, upper=upper_bound)
+        
+        df.dropna(inplace=True)
+        return df
+
+    def _adjust_for_splits(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Placeholder for applying stock split adjustments."""
+        # In a real system, you would load a corporate actions table and apply
+        # adjustments to price and volume columns for dates before the split.
+        logger.info("Applying split adjustments (placeholder).")
+        return df
+
+    def _adjust_for_dividends(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Placeholder for applying dividend adjustments."""
+        # In a real system, you would load a corporate actions table and adjust
+        # price columns for cash dividends to calculate total return.
+        logger.info("Applying dividend adjustments (placeholder).")
+        return df
 
 # research/factor_library.py
 """
